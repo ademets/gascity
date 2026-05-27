@@ -1457,6 +1457,9 @@ func (s *BdStore) listEphemeral(query ListQuery) ([]Bead, error) {
 	if query.IncludeClosed || query.Status == "closed" {
 		args = append(args, "--all")
 	}
+	if query.Sort == SortCreatedDesc {
+		args = append(args, "--sort", "created")
+	}
 	wispsLimit := 0
 	if query.Limit > 0 && serverFilteredOnly && canApplyWispsServerLimit(query) {
 		wispsLimit = query.Limit
@@ -1488,7 +1491,9 @@ func (s *BdStore) listEphemeral(query ListQuery) ([]Bead, error) {
 }
 
 func canApplyWispsServerLimit(query ListQuery) bool {
-	return query.Sort == SortDefault && query.CreatedBefore.IsZero() && len(query.Metadata) == 0
+	return (query.Sort == SortDefault || query.Sort == SortCreatedDesc) &&
+		query.CreatedBefore.IsZero() &&
+		len(query.Metadata) == 0
 }
 
 func appendBdQueryClause(clauses []string, serverFilteredOnly bool, field, value string) ([]string, bool) {

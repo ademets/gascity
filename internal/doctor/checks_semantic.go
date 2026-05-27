@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gastownhall/gascity/internal/config"
+	"github.com/gastownhall/gascity/internal/events"
 	"github.com/gastownhall/gascity/internal/git"
 	"github.com/gastownhall/gascity/internal/pathutil"
 )
@@ -136,16 +137,18 @@ func (c *DurationRangeCheck) Fix(_ *CheckContext) error { return nil }
 
 // --- Event log size check ---
 
-// EventLogSizeCheck warns when .gc/events.jsonl exceeds a size threshold.
-// The event log grows unbounded; large files slow down reads and waste disk.
+// EventLogSizeCheck warns when .gc/events.jsonl exceeds the active-log
+// rotation ceiling. The recorder rotates by size, so this threshold should
+// match the default rotation policy instead of warning below it.
 type EventLogSizeCheck struct {
-	// MaxSize is the warning threshold in bytes. Defaults to 100 MB.
+	// MaxSize is the warning threshold in bytes. Defaults to the event
+	// recorder's automatic rotation size.
 	MaxSize int64
 }
 
 // NewEventLogSizeCheck creates a check for event log size.
 func NewEventLogSizeCheck() *EventLogSizeCheck {
-	return &EventLogSizeCheck{MaxSize: 100 * 1024 * 1024} // 100 MB
+	return &EventLogSizeCheck{MaxSize: events.DefaultRotationMaxSize}
 }
 
 // Name returns the check identifier.
@@ -173,7 +176,7 @@ func (c *EventLogSizeCheck) Run(ctx *CheckContext) *CheckResult {
 	r.Status = StatusWarning
 	r.Message = fmt.Sprintf("events.jsonl is %s (exceeds %s threshold)",
 		humanSize(size), humanSize(c.MaxSize))
-	r.FixHint = "consider truncating or archiving .gc/events.jsonl"
+	r.FixHint = "events.jsonl should rotate automatically at this size; inspect recorder rotation errors or force a rotation"
 	return r
 }
 

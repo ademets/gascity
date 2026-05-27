@@ -83,6 +83,21 @@ func TestRecordAutoRotatesOnSizeThreshold(t *testing.T) {
 	}
 }
 
+func TestNewFileRecorderEnablesDefaultAutoRotation(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "events.jsonl")
+	var stderr bytes.Buffer
+	rec, err := NewFileRecorder(path, &stderr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rec.Close() //nolint:errcheck // test cleanup
+
+	if rec.maxSize != defaultRotationMaxSize {
+		t.Fatalf("default maxSize = %d, want %d", rec.maxSize, defaultRotationMaxSize)
+	}
+}
+
 // TestRecordAutoRotateDisabledByZeroMaxSize ensures the size-gated
 // rotation path stays dormant when MaxSize is zero or negative,
 // preserving backwards compatibility for callers that only set the

@@ -18,7 +18,10 @@ import (
 // and were chosen so a busy city rotates roughly once per day at
 // steady-state throughput.
 const (
-	defaultRotationMaxSize       = 256 * 1024 * 1024 // 256 MiB
+	// DefaultRotationMaxSize is the active events.jsonl size threshold
+	// used by FileRecorder auto-rotation and doctor calibration.
+	DefaultRotationMaxSize       = 256 * 1024 * 1024 // 256 MiB
+	defaultRotationMaxSize       = DefaultRotationMaxSize
 	defaultRotationCheckRecords  = 1024
 	defaultRotationCheckInterval = 60 * time.Second
 
@@ -181,7 +184,7 @@ func NewFileRecorder(path string, stderr io.Writer, opts ...FileRecorderOption) 
 		file:                  file,
 		seq:                   maxSeq,
 		stderr:                stderr,
-		maxSize:               0,
+		maxSize:               defaultRotationMaxSize,
 		rotationCheckRecords:  defaultRotationCheckRecords,
 		rotationCheckInterval: defaultRotationCheckInterval,
 		lastSizeCheck:         time.Now(),

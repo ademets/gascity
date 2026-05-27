@@ -2996,6 +2996,53 @@ func TestBdStoreListWispsAppliesMetadataBeforeClientLimit(t *testing.T) {
 	}
 }
 
+func TestBdStoreListBothTiersAppliesServerLimitForCreatedDescWisps(t *testing.T) {
+	var calls []string
+	runner := func(_, name string, args ...string) ([]byte, error) {
+		full := name + " " + strings.Join(args, " ")
+		calls = append(calls, full)
+		switch full {
+		case `bd list --json --label=order-run:o --all --include-infra --include-gates --limit 1`:
+			return []byte(`[{
+				"id":"bd-i",
+				"title":"issue",
+				"status":"closed",
+				"issue_type":"task",
+				"created_at":"2026-05-01T00:00:00Z",
+				"labels":["order-run:o"]
+			}]`), nil
+		case `bd query --json ephemeral=true AND label=order-run:o --all --sort created --limit 1`:
+			return []byte(`[{
+				"id":"bd-w",
+				"title":"wisp",
+				"status":"closed",
+				"issue_type":"task",
+				"created_at":"2026-05-02T00:00:00Z",
+				"ephemeral":true,
+				"labels":["order-run:o"]
+			}]`), nil
+		}
+		return nil, fmt.Errorf("unexpected: %s", full)
+	}
+	s := beads.NewBdStore("/city", runner)
+	got, err := s.List(beads.ListQuery{
+		Label:         "order-run:o",
+		Limit:         1,
+		IncludeClosed: true,
+		Sort:          beads.SortCreatedDesc,
+		TierMode:      beads.TierBoth,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ID != "bd-w" {
+		t.Fatalf("got = %+v, want newest wisp bd-w", got)
+	}
+	if len(calls) != 2 {
+		t.Fatalf("calls = %v, want issues and wisps queries", calls)
+	}
+}
+
 func TestBdStoreListWispsReturnsPartialRowsWithErrorOnCorruptEntries(t *testing.T) {
 	runner := fakeRunner(map[string]struct {
 		out []byte

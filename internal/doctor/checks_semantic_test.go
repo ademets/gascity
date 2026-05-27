@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gastownhall/gascity/internal/config"
+	"github.com/gastownhall/gascity/internal/events"
 	"github.com/gastownhall/gascity/internal/git"
 	"github.com/gastownhall/gascity/internal/pathutil"
 )
@@ -164,6 +165,13 @@ func TestDurationRangeCheck_MultipleIssues(t *testing.T) {
 }
 
 // --- EventLogSizeCheck ---
+
+func TestEventLogSizeCheck_DefaultThresholdMatchesRecorderRotation(t *testing.T) {
+	c := NewEventLogSizeCheck()
+	if c.MaxSize != events.DefaultRotationMaxSize {
+		t.Fatalf("MaxSize = %d, want recorder default %d", c.MaxSize, events.DefaultRotationMaxSize)
+	}
+}
 
 func TestEventLogSizeCheck_SmallFile(t *testing.T) {
 	dir := t.TempDir()
